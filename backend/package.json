@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node scripts/seed.js"
   },
   "dependencies": {
     "dotenv": "^17.2.1",
