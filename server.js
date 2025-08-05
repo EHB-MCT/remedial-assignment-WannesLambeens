@@ -1,24 +1,35 @@
 import express from "express";
+import mongoose from "mongoose";
 import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
 
+// ⬇️ Load environment variables from .env
 dotenv.config();
+
+// ⬇️ Create Express app
 const app = express();
+
+// ⬇️ Enable JSON request parsing
 app.use(express.json());
 
-// pad helpers
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ⬇️ Environment variables
+const { PORT = 3000, MONGODB_URI } = process.env;
 
-// frontend statisch serveren
-app.use(express.static(path.join(__dirname, "frontend")));
+// ⬇️ Connect to MongoDB
+mongoose.connect(MONGODB_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
 
-// healthcheck
-app.get("/api/health", (_, res) => res.json({ ok: true }));
+    // ⬇️ Start Express server only after DB connection
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1); // Stop server if DB fails
+  });
 
-// placeholder API-root
-app.get("/api", (_, res) => res.json({ api: "ok" }));
-
-const { PORT = 3000 } = process.env;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// Optional: basic health check route
+app.get("/", (req, res) => {
+  res.send("📈 Stock webgame backend is running!");
+});
