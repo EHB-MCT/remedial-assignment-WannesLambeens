@@ -1,6 +1,7 @@
+import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Player from "../models/player.model.js";
-import Portfolio from "../models/portfolio.model.js";
+import { updatePortfolio } from "./portfolio.service.js"; // zorg dat dit bestaat
 
 export async function applyTick() {
   const buyOrders = await Order.find({ side: "BUY", status: "OPEN", type: "LIMIT" }).sort({
@@ -14,7 +15,6 @@ export async function applyTick() {
   });
 
   let tradesMatched = 0;
-  let pricesUpdated = 0;
 
   for (const buyOrder of buyOrders) {
     for (const sellOrder of sellOrders) {
@@ -36,44 +36,51 @@ export async function applyTick() {
         parseFloat(sellOrder.remaining.toString())
       );
 
-      const tradePrice = sellPrice; // of een midpoint of andere logica
+      const tradePrice = sellPrice;
       const tradeValue = quantityToTrade * tradePrice;
 
       const buyer = await Player.findById(buyOrder.playerId);
       const seller = await Player.findById(sellOrder.playerId);
 
       if (!buyer || !seller) continue;
-      if (buyer.cash < tradeValue) continue;
 
-      //  Update koper
-      buyer.cash -= tradeValue;
-      await Portfolio.findOneAndUpdate(
-        { playerId: buyer._id, ticker: buyOrder.ticker },
-        { $inc: { quantity: quantityToTrade } },
-        { upsert: true }
+      const buyerCash = parseFloat(buyer.cash.toString());
+
+      if (buyerCash < tradeValue) continue;
+
+      // ✅ Cash updates
+      buyer.cash = mongoose.Types.Decimal128.fromString((buyerCash - tradeValue).toFixed(2));
+      seller.cash = mongoose.Types.Decimal128.fromString(
+        (parseFloat(seller.cash.toString()) + tradeValue).toFixed(2)
       );
+
       await buyer.save();
-
-      //  Update verkoper
-      seller.cash += tradeValue;
-      await Portfolio.findOneAndUpdate(
-        { playerId: seller._id, ticker: sellOrder.ticker },
-        { $inc: { quantity: -quantityToTrade } }
-      );
       await seller.save();
 
-      //  Update orders
-      buyOrder.remaining = (parseFloat(buyOrder.remaining.toString()) - quantityToTrade).toFixed(2);
-      sellOrder.remaining = (parseFloat(sellOrder.remaining.toString()) - quantityToTrade).toFixed(2);
+      // ✅ Portfolio updates
+      await updatePortfolio(buyer._id, buyOrder.ticker, quantityToTrade);      // koper krijgt aandelen
+      await updatePortfolio(seller._id, sellOrder.ticker, -quantityToTrade);   // verkoper verliest aandelen
 
-      if (parseFloat(buyOrder.remaining) <= 0) buyOrder.status = "FILLED";
-      if (parseFloat(sellOrder.remaining) <= 0) sellOrder.status = "FILLED";
+      // ✅ Order updates
+      buyOrder.remaining = mongoose.Types.Decimal128.fromString(
+        (parseFloat(buyOrder.remaining.toString()) - quantityToTrade).toFixed(2)
+      );
+      sellOrder.remaining = mongoose.Types.Decimal128.fromString(
+        (parseFloat(sellOrder.remaining.toString()) - quantityToTrade).toFixed(2)
+      );
+
+      if (parseFloat(buyOrder.remaining.toString()) <= 0) {
+        buyOrder.status = "FILLED";
+      }
+
+      if (parseFloat(sellOrder.remaining.toString()) <= 0) {
+        sellOrder.status = "FILLED";
+      }
 
       await buyOrder.save();
       await sellOrder.save();
 
       tradesMatched += 1;
-      pricesUpdated += 1;
     }
   }
 
@@ -82,6 +89,5 @@ export async function applyTick() {
     buyOrdersCount: buyOrders.length,
     sellOrdersCount: sellOrders.length,
     tradesMatched,
-    pricesUpdated,
   };
 }
