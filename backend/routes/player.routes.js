@@ -1,5 +1,7 @@
 import express from "express";
 import Player from "../models/player.model.js";
+import Portfolio from "../models/portfolio.model.js";
+import Order from "../models/order.model.js";
 
 const router = express.Router();
 
@@ -22,3 +24,30 @@ router.post("/", async (req, res) => {
 });
 
 export default router;
+
+
+// GET /api/players/:id/summary
+router.get("/:id/summary", async (req, res) => {
+  const playerId = req.params.id;
+
+  try {
+    const player = await Player.findById(playerId);
+    if (!player) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    const [portfolio, openOrders] = await Promise.all([
+      Portfolio.find({ playerId }),
+      Order.find({ playerId, status: "OPEN" }),
+    ]);
+
+    res.json({
+      name: player.name,
+      cash: player.cash,
+      portfolio,
+      openOrders,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
