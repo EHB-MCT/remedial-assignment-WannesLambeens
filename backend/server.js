@@ -7,7 +7,8 @@ import cors from "cors";
 // Routes
 import playerRoutes from "./routes/player.routes.js";
 import symbolRoutes from "./routes/symbol.routes.js";
-import orderRoutes from "./routes/order.routes.js"; // ✅ NIEUW
+import orderRoutes from "./routes/order.routes.js";
+import adminRoutes from "./routes/admin.routes.js"; 
 
 dotenv.config();
 
@@ -29,8 +30,8 @@ app.get("/health", (req, res) => {
 // ----- API Routes -----
 app.use("/api/players", playerRoutes);
 app.use("/api/symbols", symbolRoutes);
-app.use("/api/orders", orderRoutes); // ✅ NIEUW
-
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes); 
 // ----- 404 fallback -----
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
@@ -63,4 +64,3 @@ async function start() {
 }
 
 start();
-
