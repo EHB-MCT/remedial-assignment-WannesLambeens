@@ -5,7 +5,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 
 // Routes
-import playerRoutes from "./routes/player.routes.js"; // POST /api/players
+import playerRoutes from "./routes/player.routes.js";
+import symbolRoutes from "./routes/symbol.routes.js";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.get("/health", (req, res) => {
 
 // ----- API Routes -----
 app.use("/api/players", playerRoutes);
+app.use("/api/symbols", symbolRoutes);
 
 // ----- 404 fallback -----
 app.use((req, res) => {
@@ -38,17 +40,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-// ----- DB connect & start -----
+// ----- DB connect & server start -----
 async function start() {
   if (!MONGODB_URI) {
-    console.error("Missing MONGODB_URI in .env");
+    console.error("❌ Missing MONGODB_URI in .env");
     process.exit(1);
   }
 
   try {
-    await mongoose.connect(MONGODB_URI, {
-      // options optional in modern mongoose
-    });
+    await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
     app.listen(PORT, () => {
