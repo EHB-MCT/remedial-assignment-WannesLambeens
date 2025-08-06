@@ -8,7 +8,8 @@ import cors from "cors";
 import playerRoutes from "./routes/player.routes.js";
 import symbolRoutes from "./routes/symbol.routes.js";
 import orderRoutes from "./routes/order.routes.js";
-import adminRoutes from "./routes/admin.routes.js"; 
+import adminRoutes from "./routes/admin.routes.js";
+import tradeRoutes from "./routes/trades.routes.js"; 
 
 dotenv.config();
 
@@ -31,7 +32,9 @@ app.get("/health", (req, res) => {
 app.use("/api/players", playerRoutes);
 app.use("/api/symbols", symbolRoutes);
 app.use("/api/orders", orderRoutes);
-app.use("/api/admin", adminRoutes); 
+app.use("/api/admin", adminRoutes);
+app.use("/api/trades", tradeRoutes); // ✅ Nieuw toegevoegd
+
 // ----- 404 fallback -----
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
