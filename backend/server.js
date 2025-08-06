@@ -1,35 +1,69 @@
+// server.js
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import cors from "cors";
 
-// ⬇️ Load environment variables from .env
+// Routes
+import playerRoutes from "./routes/player.routes.js";
+import symbolRoutes from "./routes/symbol.routes.js";
+import orderRoutes from "./routes/order.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import tradeRoutes from "./routes/trades.routes.js"; 
+
 dotenv.config();
 
-// ⬇️ Create Express app
 const app = express();
 
-// ⬇️ Enable JSON request parsing
-app.use(express.json());
+// ----- Config -----
+const PORT = process.env.PORT || 3000;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// ⬇️ Environment variables
-const { PORT = 3000, MONGODB_URI } = process.env;
+// ----- Middleware -----
+app.use(cors());
+app.use(express.json()); // parse JSON bodies
 
-// ⬇️ Connect to MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log("✅ MongoDB connected");
-
-    // ⬇️ Start Express server only after DB connection
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err.message);
-    process.exit(1); // Stop server if DB fails
-  });
-
-// Optional: basic health check route
-app.get("/", (req, res) => {
-  res.send("📈 Stock webgame backend is running!");
+// ----- Healthcheck -----
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
 });
+
+// ----- API Routes -----
+app.use("/api/players", playerRoutes);
+app.use("/api/symbols", symbolRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/trades", tradeRoutes); // ✅ Nieuw toegevoegd
+
+// ----- 404 fallback -----
+app.use((req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// ----- Global error handler -----
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+// ----- DB connect & server start -----
+async function start() {
+  if (!MONGODB_URI) {
+    console.error("❌ Missing MONGODB_URI in .env");
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log("✅ Connected to MongoDB");
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server listening on http://localhost:${PORT}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to connect to MongoDB:", err.message);
+    process.exit(1);
+  }
+}
+
+start();

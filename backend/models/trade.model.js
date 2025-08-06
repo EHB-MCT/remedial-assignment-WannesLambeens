@@ -15,7 +15,7 @@ const TradeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Decimal128,
     required: true,
   },
-  ts: {
+  createdAt: {
     type: Date,
     default: Date.now,
   },
@@ -31,7 +31,6 @@ const TradeSchema = new mongoose.Schema({
   },
 });
 
-// 📌 Index voor snelle opzoeking van trades per ticker, chronologisch
-TradeSchema.index({ ticker: 1, ts: 1 });
+TradeSchema.index({ ticker: 1, createdAt: 1 });
 
 export default mongoose.model("Trade", TradeSchema);
