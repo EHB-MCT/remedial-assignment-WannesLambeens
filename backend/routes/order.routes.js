@@ -1,41 +1,41 @@
 import express from "express";
+import mongoose from "mongoose";
 import Order from "../models/order.model.js";
-import { orderSchema } from "../validators/order.schema.js";
+import { orderSchema } from "../schemas/order.schema.js";
 
 const router = express.Router();
 
-// POST /api/orders
+// ✅ POST /api/orders - Plaats een nieuwe order
 router.post("/", async (req, res) => {
   try {
-    // 1. Validatie
     const parsed = orderSchema.parse(req.body);
 
-    // 2. Extra checks
-    if (parsed.type === "MARKET" && parsed.limitPrice) {
-      return res.status(400).json({
-        error: "Market orders should not include a limitPrice",
-      });
-    }
-
-    if (parsed.type === "LIMIT" && !parsed.limitPrice) {
-      return res.status(400).json({
-        error: "Limit orders must include a limitPrice",
-      });
-    }
-
-    // 3. Order aanmaken
-    const order = await Order.create({
-      ...parsed,
-      remaining: parsed.quantity,
+    const order = new Order({
+      playerId: parsed.playerId,
+      ticker: parsed.ticker,
+      side: parsed.side,
+      type: parsed.type,
+      quantity: mongoose.Types.Decimal128.fromString(parsed.quantity),
+      remaining: mongoose.Types.Decimal128.fromString(parsed.quantity),
+      limitPrice: parsed.limitPrice
+        ? mongoose.Types.Decimal128.fromString(parsed.limitPrice)
+        : null,
     });
 
+    await order.save();
     res.status(201).json(order);
   } catch (err) {
-    if (err.name === "ZodError") {
-      return res.status(400).json({ error: err.errors });
-    }
-    console.error("Error creating order:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ✅ GET /api/orders - (optioneel) lijst alle orders
+router.get("/", async (req, res) => {
+  try {
+    const orders = await Order.find();
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

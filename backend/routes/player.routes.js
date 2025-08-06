@@ -5,28 +5,34 @@ import Order from "../models/order.model.js";
 
 const router = express.Router();
 
-// POST /api/players
-router.post("/", async (req, res) => {
+// ✅ GET /api/players - alle spelers ophalen
+router.get("/", async (req, res) => {
   try {
-    const { name, cash } = req.body;
-
-    if (!name || !cash) {
-      return res.status(400).json({ error: "Name and cash are required" });
-    }
-
-    const player = new Player({ name, cash });
-    await player.save();
-
-    res.status(201).json(player);
+    const players = await Player.find();
+    res.json(players);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-export default router;
+// ✅ POST /api/players - nieuwe speler aanmaken
+router.post("/", async (req, res) => {
+  const { name } = req.body;
 
+  if (!name) {
+    return res.status(400).json({ error: "Name is required" });
+  }
 
-// GET /api/players/:id/summary
+  try {
+    const newPlayer = new Player({ name, cash: 10000 });
+    await newPlayer.save();
+    res.status(201).json(newPlayer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ GET /api/players/:id/summary - speler overzicht ophalen
 router.get("/:id/summary", async (req, res) => {
   const playerId = req.params.id;
 
@@ -51,3 +57,5 @@ router.get("/:id/summary", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+export default router;
