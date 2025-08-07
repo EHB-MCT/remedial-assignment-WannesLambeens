@@ -3,6 +3,8 @@ import Home from "./pages/Home.jsx";
 import PlayerDashboard from "./pages/PlayerDashboard.jsx";
 import NewOrderForm from "./pages/NewOrderForm.jsx";
 import Trades from "./pages/Trades.jsx"; 
+import Login from "./pages/Login.jsx";
+import Register from "./pages/Register.jsx";
 
 export default function App() {
   return (
@@ -12,6 +14,8 @@ export default function App() {
         <Route path="/player/:id" element={<PlayerDashboard />} />
         <Route path="/players/:id/new-order" element={<NewOrderForm />} />
         <Route path="/trades" element={<Trades />} /> {}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
       </Routes>
     </Router>
   );

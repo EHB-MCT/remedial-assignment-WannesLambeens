@@ -1,4 +1,3 @@
-// server.js
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -9,7 +8,8 @@ import playerRoutes from "./routes/player.routes.js";
 import symbolRoutes from "./routes/symbol.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
-import tradeRoutes from "./routes/trades.routes.js"; 
+import tradeRoutes from "./routes/trades.routes.js";
+import authRoutes from "./routes/auth.routes.js"; 
 
 dotenv.config();
 
@@ -33,7 +33,8 @@ app.use("/api/players", playerRoutes);
 app.use("/api/symbols", symbolRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/trades", tradeRoutes); // ✅ Nieuw toegevoegd
+app.use("/api/trades", tradeRoutes);
+app.use("/api/auth", authRoutes); 
 
 // ----- 404 fallback -----
 app.use((req, res) => {
@@ -49,19 +50,19 @@ app.use((err, req, res, next) => {
 // ----- DB connect & server start -----
 async function start() {
   if (!MONGODB_URI) {
-    console.error("❌ Missing MONGODB_URI in .env");
+    console.error("Missing MONGODB_URI in .env");
     process.exit(1);
   }
 
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log("✅ Connected to MongoDB");
+    console.log("Connected to MongoDB");
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server listening on http://localhost:${PORT}`);
+      console.log(`Server listening on http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Failed to connect to MongoDB:", err.message);
+    console.error("Failed to connect to MongoDB:", err.message);
     process.exit(1);
   }
 }
