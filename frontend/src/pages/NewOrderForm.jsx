@@ -3,127 +3,118 @@ import { useState } from "react";
 import axios from "axios";
 
 export default function NewOrderForm() {
-  const { id } = useParams(); // speler-ID
+  const { id } = useParams();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    ticker: "",
-    side: "BUY",
-    type: "LIMIT",
-    quantity: "",
-    limitPrice: "",
-  });
+  const [ticker, setTicker] = useState("");
+  const [side, setSide] = useState("BUY");
+  const [type, setType] = useState("LIMIT");
+  const [quantity, setQuantity] = useState("");
+  const [limitPrice, setLimitPrice] = useState("");
 
+  const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage(null);
     setError(null);
 
     try {
       const payload = {
-        ...formData,
         playerId: id,
-        quantity: formData.quantity.toString(),
-        limitPrice: formData.limitPrice ? formData.limitPrice.toString() : undefined,
+        ticker,
+        side,
+        type,
+        quantity,
+        ...(type === "LIMIT" && { limitPrice }),
       };
 
       await axios.post("http://localhost:3000/api/orders", payload);
-
-      alert("Order succesvol geplaatst");
-      navigate(`/player/${id}`);
+      setMessage("✅ Order geplaatst!");
+      setTimeout(() => navigate(`/player/${id}`), 2000);
     } catch (err) {
-      console.error("Order aanmaken mislukt:", err);
-      setError(err.response?.data?.error || "Er ging iets mis.");
+      console.error(err);
+      setError("❌ Fout bij order plaatsen.");
     }
   };
 
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h2 className="text-xl font-bold mb-4">Nieuwe Order Plaatsen</h2>
+    <div className="max-w-md mx-auto mt-8 p-4 border rounded shadow">
+      <h2 className="text-xl font-semibold mb-4">📄 Nieuwe Order</h2>
+
+      {message && <p className="text-green-600 mb-2">{message}</p>}
+      {error && <p className="text-red-600 mb-2">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block mb-1">Ticker</label>
+          <label className="block font-medium">Ticker</label>
           <input
             type="text"
-            name="ticker"
-            value={formData.ticker}
-            onChange={handleChange}
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+            className="w-full border rounded px-3 py-2"
             required
-            className="w-full border p-2 rounded"
-            placeholder="AAPL"
           />
         </div>
 
         <div>
-          <label className="block mb-1">Side</label>
-          <select
-            name="side"
-            value={formData.side}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          >
-            <option value="BUY">Buy</option>
-            <option value="SELL">Sell</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">Order Type</label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            className="w-full border p-2 rounded"
-          >
-            <option value="LIMIT">Limit</option>
-            <option value="MARKET">Market</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">Aantal aandelen</label>
+          <label className="block font-medium">Aantal aandelen</label>
           <input
             type="number"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleChange}
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            className="w-full border rounded px-3 py-2"
             required
+            min="0.01"
             step="0.01"
-            className="w-full border p-2 rounded"
-            placeholder="10"
           />
         </div>
 
-        {formData.type === "LIMIT" && (
+        <div>
+          <label className="block font-medium">Order type</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+          >
+            <option value="LIMIT">LIMIT</option>
+            <option value="MARKET">MARKET</option>
+          </select>
+        </div>
+
+        {type === "LIMIT" && (
           <div>
-            <label className="block mb-1">Limit Prijs (€)</label>
+            <label className="block font-medium">Limietprijs (€)</label>
             <input
               type="number"
-              name="limitPrice"
-              value={formData.limitPrice}
-              onChange={handleChange}
+              value={limitPrice}
+              onChange={(e) => setLimitPrice(e.target.value)}
+              className="w-full border rounded px-3 py-2"
               required
+              min="0.01"
               step="0.01"
-              className="w-full border p-2 rounded"
-              placeholder="150.00"
             />
           </div>
         )}
 
-        {error && <p className="text-red-500">{error}</p>}
+        <div>
+          <label className="block font-medium">Koop of verkoop</label>
+          <select
+            value={side}
+            onChange={(e) => setSide(e.target.value)}
+            className="w-full border rounded px-3 py-2"
+          >
+            <option value="BUY">BUY</option>
+            <option value="SELL">SELL</option>
+          </select>
+        </div>
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
         >
-          Plaats Order
+          Order plaatsen
         </button>
       </form>
     </div>

@@ -2,51 +2,37 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 export default function Trades() {
-  const [ticker, setTicker] = useState("AAPL");
-  const [lastPrice, setLastPrice] = useState(null);
+  const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!ticker) return;
-
-    setLoading(true);
     axios
-      .get(`http://localhost:3000/api/trades/last-price/${ticker}`)
-      .then((res) => setLastPrice(res.data))
+      .get("http://localhost:3000/api/trades") 
+      .then((res) => setTrades(res.data))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [ticker]);
+  }, []);
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Trade Info</h2>
-
-      <label className="block mb-2">
-        Kies ticker:
-        <select
-          value={ticker}
-          onChange={(e) => setTicker(e.target.value)}
-          className="ml-2 border px-2 py-1"
-        >
-          <option value="AAPL">AAPL</option>
-          <option value="GOOG">GOOG</option>
-          <option value="TSLA">TSLA</option>
-        </select>
-      </label>
+      <h2 className="text-xl font-semibold mb-4">Recente Trades</h2>
 
       {loading ? (
-        <p>Bezig met laden...</p>
-      ) : lastPrice ? (
-        <div className="mt-4">
-          <p>Ticker: {lastPrice.ticker}</p>
-          <p>Laatste prijs: €{lastPrice.lastPrice.toFixed(2)}</p>
-          <p>
-            Laatste trade:{" "}
-            {lastPrice.ts ? new Date(lastPrice.ts).toLocaleString() : "Onbekend"}
-        </p>
-        </div>
+        <p>Trades aan het laden...</p>
+      ) : trades.length === 0 ? (
+        <p className="text-gray-500">Er zijn nog geen trades gebeurd.</p>
       ) : (
-        <p>Geen trades gevonden voor {ticker}.</p>
+        <ul className="list-disc list-inside space-y-2">
+          {trades.map((trade) => (
+            <li key={trade._id}>
+              <strong>{trade.ticker}</strong> — {trade.quantity} stuks @ €
+              {parseFloat(trade.price).toFixed(2)} <br />
+              <span className="text-sm text-gray-500">
+                {new Date(trade.createdAt).toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
