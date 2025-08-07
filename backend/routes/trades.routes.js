@@ -4,7 +4,7 @@ import Trade from "../models/trade.model.js";
 
 const router = express.Router();
 
-// ✅ GET /api/trades/last-price/:ticker
+// GET /api/trades/last-price/:ticker
 router.get("/last-price/:ticker", async (req, res) => {
   try {
     const { ticker } = req.params;
@@ -19,7 +19,7 @@ router.get("/last-price/:ticker", async (req, res) => {
     res.json({
       ticker: lastTrade.ticker,
       lastPrice: parseFloat(lastTrade.price.toString()),
-      ts: lastTrade.ts,
+      ts: lastTrade.createdAt,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
