@@ -1,11 +1,16 @@
-import Home from "./pages/Home";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home.jsx";
+import PlayerDashboard from "./pages/PlayerDashboard.jsx";
+import NewOrderForm from "./pages/NewOrderForm.jsx";
 
-function App() {
+export default function App() {
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <Home />
-    </main>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/player/:id" element={<PlayerDashboard />} />
+        <Route path="/players/:id/new-order" element={<NewOrderForm />} />
+      </Routes>
+    </Router>
   );
 }
-
-export default App;

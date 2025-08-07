@@ -1,22 +1,16 @@
 import mongoose from "mongoose";
 
-const { Schema, model } = mongoose;
-
-const PlayerSchema = new Schema({
+const PlayerSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+    unique: true, 
     trim: true,
   },
   cash: {
     type: mongoose.Schema.Types.Decimal128,
     required: true,
-    default: "100000.00",
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
   },
 });
 
-export default model("Player", PlayerSchema);
+export default mongoose.model("Player", PlayerSchema);
