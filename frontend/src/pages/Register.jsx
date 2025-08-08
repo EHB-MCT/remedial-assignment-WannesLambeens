@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function Register() {
       });
 
       const playerId = res.data.playerId;
-      localStorage.setItem("playerId", playerId);
+      login(playerId);
       navigate(`/player/${playerId}`);
     } catch (err) {
       setError("Registration failed. Try a different username.");

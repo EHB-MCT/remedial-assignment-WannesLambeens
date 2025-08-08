@@ -31,17 +31,17 @@ export default function NewOrderForm() {
       };
 
       await axios.post("http://localhost:3000/api/orders", payload);
-      setMessage("✅ Order geplaatst!");
+      setMessage("Order geplaatst");
       setTimeout(() => navigate(`/player/${id}`), 2000);
     } catch (err) {
       console.error(err);
-      setError("❌ Fout bij order plaatsen.");
+      setError("Fout bij order plaatsen.");
     }
   };
 
   return (
     <div className="max-w-md mx-auto mt-8 p-4 border rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">📄 Nieuwe Order</h2>
+      <h2 className="text-xl font-semibold mb-4">Nieuwe Order</h2>
 
       {message && <p className="text-green-600 mb-2">{message}</p>}
       {error && <p className="text-red-600 mb-2">{error}</p>}

@@ -9,7 +9,8 @@ import symbolRoutes from "./routes/symbol.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import tradeRoutes from "./routes/trades.routes.js";
-import authRoutes from "./routes/auth.routes.js"; 
+import authRoutes from "./routes/auth.routes.js";
+import portfolioRoutes from "./routes/portfolio.routes.js"; 
 
 dotenv.config();
 
@@ -34,7 +35,8 @@ app.use("/api/symbols", symbolRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/trades", tradeRoutes);
-app.use("/api/auth", authRoutes); 
+app.use("/api/auth", authRoutes);
+app.use("/api/portfolio", portfolioRoutes);
 
 // ----- 404 fallback -----
 app.use((req, res) => {
