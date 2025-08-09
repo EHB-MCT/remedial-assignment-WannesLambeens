@@ -9,27 +9,27 @@ const MONGODB_URI = process.env.MONGODB_URI;
 async function seed() {
   try {
     await mongoose.connect(MONGODB_URI);
-    console.log(" Verbonden met MongoDB");
+    console.log("Verbonden met MongoDB");
 
     const players = [
-      { name: "Bob", cash: 100000 },
-      { name: "Alice", cash: 100000 },
+      { username: "bob", password: "password123" },
+      { username: "alice", password: "password123" },
     ];
 
     for (const player of players) {
-      const existing = await Player.findOne({ name: player.name });
+      const existing = await Player.findOne({ username: player.username });
       if (existing) {
-        console.log(`➡️  ${player.name} bestaat al`);
+        console.log(` ${player.username} bestaat al`);
         continue;
       }
 
       await Player.create(player);
-      console.log(` ${player.name} aangemaakt`);
+      console.log(`${player.username} aangemaakt`);
     }
 
     process.exit();
   } catch (err) {
-    console.error(" Fout tijdens seeding:", err.message);
+    console.error("Fout tijdens seeding:", err.message);
     process.exit(1);
   }
 }
