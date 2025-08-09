@@ -1,21 +1,20 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [playerId, setPlayerId] = useState(() => {
-    return localStorage.getItem("playerId") || null;
-  });
+  const [playerId, setPlayerId] = useState(localStorage.getItem("playerId"));
 
-  const login = (id) => {
-    setPlayerId(id);
-    localStorage.setItem("playerId", id);
-  };
+  useEffect(() => {
+    if (playerId) {
+      localStorage.setItem("playerId", playerId);
+    } else {
+      localStorage.removeItem("playerId");
+    }
+  }, [playerId]);
 
-  const logout = () => {
-    setPlayerId(null);
-    localStorage.removeItem("playerId");
-  };
+  const login = (id) => setPlayerId(id);
+  const logout = () => setPlayerId(null);
 
   return (
     <AuthContext.Provider value={{ playerId, login, logout }}>

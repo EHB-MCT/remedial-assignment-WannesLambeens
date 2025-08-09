@@ -3,16 +3,31 @@ import Player from "../models/player.model.js";
 import Portfolio from "../models/portfolio.model.js";
 import Trade from "../models/trade.model.js";
 
-export async function applyTick() {
-  const buyOrders = await Order.find({ side: "BUY", status: "OPEN", type: "LIMIT" }).sort({
-    limitPrice: -1,
-    createdAt: 1,
-  });
+const num = (v) => Number(typeof v?.toString === "function" ? v.toString() : v || 0);
 
-  const sellOrders = await Order.find({ side: "SELL", status: "OPEN", type: "LIMIT" }).sort({
-    limitPrice: 1,
-    createdAt: 1,
-  });
+async function incEmbeddedPortfolio(player, ticker, deltaQty) {
+  const i = player.portfolio.findIndex((p) => p.ticker === ticker);
+  if (i === -1) {
+    if (deltaQty > 0) player.portfolio.push({ ticker, quantity: deltaQty });
+  } else {
+    player.portfolio[i].quantity = num(player.portfolio[i].quantity) + deltaQty;
+    if (player.portfolio[i].quantity <= 0) player.portfolio.splice(i, 1);
+  }
+}
+
+
+export async function applyTick() {
+  const buyOrders = await Order.find({
+    side: "BUY",
+    status: "OPEN",
+    type: "LIMIT",
+  }).sort({ limitPrice: -1, createdAt: 1 });
+
+  const sellOrders = await Order.find({
+    side: "SELL",
+    status: "OPEN",
+    type: "LIMIT",
+  }).sort({ limitPrice: 1, createdAt: 1 });
 
   let tradesMatched = 0;
   let pricesUpdated = 0;
@@ -27,58 +42,68 @@ export async function applyTick() {
         continue;
       }
 
-      const buyPrice = parseFloat(buyOrder.limitPrice.toString());
-      const sellPrice = parseFloat(sellOrder.limitPrice.toString());
-
+      const buyPrice = num(buyOrder.limitPrice);
+      const sellPrice = num(sellOrder.limitPrice);
       if (buyPrice < sellPrice) continue;
 
-      const quantityToTrade = Math.min(
-        parseFloat(buyOrder.remaining.toString()),
-        parseFloat(sellOrder.remaining.toString())
-      );
+      const buyRem = num(buyOrder.remaining);
+      const sellRem = num(sellOrder.remaining);
+      if (buyRem <= 0 || sellRem <= 0) continue;
 
+      const quantityToTrade = Math.min(buyRem, sellRem);
       const tradePrice = sellPrice;
       const tradeValue = quantityToTrade * tradePrice;
 
       const buyer = await Player.findById(buyOrder.playerId);
       const seller = await Player.findById(sellOrder.playerId);
-
       if (!buyer || !seller) continue;
-      if (buyer.cash < tradeValue) continue;
 
-      // Buyer update
-      buyer.cash -= tradeValue;
+      // Ensure buyer still has cash
+      if (num(buyer.cash) < tradeValue) continue;
+
+      // Ensure seller has shares (check embedded first, then collection)
+      const sellerPosIdx = seller.portfolio.findIndex(p => p.ticker === sellOrder.ticker);
+      const sellerEmbeddedQty = sellerPosIdx >= 0 ? num(seller.portfolio[sellerPosIdx].quantity) : 0;
+      let sellerHasEnough = sellerEmbeddedQty >= quantityToTrade;
+
+      if (!sellerHasEnough) {
+        const portfolioEntry = await Portfolio.findOne({
+          playerId: seller._id,
+          ticker: sellOrder.ticker,
+        });
+        sellerHasEnough = portfolioEntry && num(portfolioEntry.shares) >= quantityToTrade;
+        if (!sellerHasEnough) continue; // skip this pair if seller lacks shares
+      }
+
+      // ---- perform trade ----
+
+      buyer.cash = num(buyer.cash) - tradeValue;
+      await incEmbeddedPortfolio(buyer, buyOrder.ticker, +quantityToTrade);
       await Portfolio.findOneAndUpdate(
         { playerId: buyer._id, ticker: buyOrder.ticker },
         { $inc: { shares: quantityToTrade } },
-        { upsert: true }
+        { upsert: true, new: true }
       );
       await buyer.save();
 
-      // Seller update
-      seller.cash += tradeValue;
-      const portfolioEntry = await Portfolio.findOne({ playerId: seller._id, ticker: sellOrder.ticker });
-      if (!portfolioEntry || parseFloat(portfolioEntry.shares.toString()) < quantityToTrade) {
-        throw new Error("Verkoper heeft dit aandeel niet in portefeuille");
-      }
-
-      portfolioEntry.shares = (
-        parseFloat(portfolioEntry.shares.toString()) - quantityToTrade
-      ).toFixed(2);
-      await portfolioEntry.save();
+      seller.cash = num(seller.cash) + tradeValue;
+      await incEmbeddedPortfolio(seller, sellOrder.ticker, -quantityToTrade);
+      await Portfolio.findOneAndUpdate(
+        { playerId: seller._id, ticker: sellOrder.ticker },
+        { $inc: { shares: -quantityToTrade } },
+        { upsert: true, new: true }
+      );
       await seller.save();
 
-      // Update orders
-      buyOrder.remaining = (parseFloat(buyOrder.remaining.toString()) - quantityToTrade).toFixed(2);
-      sellOrder.remaining = (parseFloat(sellOrder.remaining.toString()) - quantityToTrade).toFixed(2);
-
-      if (parseFloat(buyOrder.remaining) <= 0) buyOrder.status = "FILLED";
-      if (parseFloat(sellOrder.remaining) <= 0) sellOrder.status = "FILLED";
-
+      buyOrder.remaining = buyRem - quantityToTrade;
+      sellOrder.remaining = sellRem - quantityToTrade;
+      if (buyOrder.remaining <= 0) buyOrder.status = "FILLED";
+      else buyOrder.status = "PARTIAL";
+      if (sellOrder.remaining <= 0) sellOrder.status = "FILLED";
+      else sellOrder.status = "PARTIAL";
       await buyOrder.save();
       await sellOrder.save();
 
-      // Save trade in DB
       await Trade.create({
         ticker: buyOrder.ticker,
         price: tradePrice,
@@ -99,4 +124,26 @@ export async function applyTick() {
     tradesMatched,
     pricesUpdated,
   };
+}
+
+let _interval = null;
+
+export function startMatchingLoop(intervalMs = 1000) {
+  if (_interval) return; 
+  _interval = setInterval(async () => {
+    try {
+      await applyTick();
+    } catch (err) {
+      console.error("Matcher error:", err);
+    }
+  }, intervalMs);
+  console.log(`Matcher running every ${intervalMs}ms`);
+}
+
+export function stopMatchingLoop() {
+  if (_interval) {
+    clearInterval(_interval);
+    _interval = null;
+    console.log("⏹Matcher stopped");
+  }
 }

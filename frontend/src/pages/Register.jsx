@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../../context/AuthContext.jsx";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -57,6 +57,14 @@ export default function Register() {
           Register
         </button>
       </form>
+
+      {/* Link naar login */}
+      <p className="mt-4">
+        Heb je al een account?{" "}
+        <Link to="/login" className="text-blue-600 underline">
+          Klik hier om in te loggen
+        </Link>
+      </p>
     </div>
   );
 }

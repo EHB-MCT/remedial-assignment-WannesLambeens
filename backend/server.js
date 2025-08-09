@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
@@ -10,7 +11,9 @@ import orderRoutes from "./routes/order.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import tradeRoutes from "./routes/trades.routes.js";
 import authRoutes from "./routes/auth.routes.js";
-import portfolioRoutes from "./routes/portfolio.routes.js"; 
+import portfolioRoutes from "./routes/portfolio.routes.js";
+
+import { startMatchingLoop } from "./services/tick.service.js";
 
 dotenv.config();
 
@@ -60,9 +63,18 @@ async function start() {
     await mongoose.connect(MONGODB_URI);
     console.log("Connected to MongoDB");
 
-    app.listen(PORT, () => {
+    startMatchingLoop();
+
+    const server = app.listen(PORT, () => {
       console.log(`Server listening on http://localhost:${PORT}`);
     });
+
+    const shutdown = () => {
+      console.log("Shutting down...");
+      server.close(() => mongoose.connection.close(false, () => process.exit(0)));
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
   } catch (err) {
     console.error("Failed to connect to MongoDB:", err.message);
     process.exit(1);
