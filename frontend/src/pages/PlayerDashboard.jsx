@@ -80,17 +80,11 @@ export default function PlayerDashboard() {
       )}
 
       <div className="flex gap-3 pt-2">
-        <Link
+                <Link
           to={`/players/${id}/new-order?side=BUY`}
           className="px-3 py-2 border rounded"
         >
-          Koop
-        </Link>
-        <Link
-          to={`/players/${id}/new-order?side=SELL`}
-          className="px-3 py-2 border rounded"
-        >
-          Verkoop
+          Koop / verkoop 
         </Link>
       </div>
     </div>
